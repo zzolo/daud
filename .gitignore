@@ -1,10 +1,13 @@
 # Project specific
 !dist
 
+# For easier GH Pages management
+!bower_components
+
 # General git ignores
 node_modules/
 components/
-bower_components/
+#bower_components/
 .sass-cache
 .env
 .tmp

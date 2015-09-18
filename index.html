@@ -112,13 +112,13 @@ var panning = new Daud({
       <div class="daud-example">
         <h3>One more dimension</h3>
 
-        <p>We can add another dimention to the data.  This time we change the "instrument" based on a 3rd variable.  There are some built-in instruments, but checkout <a href="https://github.com/rserota/wad#constructor-arguments" target="_blank">Wad documention</a> for more info.  Instrument can be a string for a preset, or an object config.</p>
+        <p>We can add another dimention to the data.  This time, on top of changing pitch for the height, we change the "instrument" based on a 3rd variable.  There are some built-in instruments, but checkout <a href="https://github.com/rserota/wad#constructor-arguments" target="_blank">Wad documention</a> for more info.  Instrument can be a string for a preset, or an object config.</p>
 
         <pre>
 var instrument = new Daud({
-  panning: function(d, i, t, p) {
-    // Use stero panning to go left and right depending on height
-    return (d.height &lt; 1) ? -1 : 1;
+  note: function(d, i, t, p) {
+    // Adjust note/pitch to height in one octave
+    return notes[Math.floor((d.height / 2) * 6)];
   },
   instrument: function(d, i, t, p) {
     // Use the color to change the instrument
@@ -231,9 +231,9 @@ $('[data-daud="instrument"]').on('click', function(e) {
 
       // Instrument
       var instrument = new Daud({
-        panning: function(d, i, t, p) {
-          // Use stero panning to go left and right depending on height
-          return (d.height < 1) ? -1 : 1;
+        note: function(d, i, t, p) {
+          // Adjust note/pitch to height in one octave
+          return notes[Math.floor((d.height / 2) * 6)];
         },
         instrument: function(d, i, t, p) {
           // Use the color to change the instrument

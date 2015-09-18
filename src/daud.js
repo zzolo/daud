@@ -108,7 +108,7 @@
               env: {
                 hold: 9001
               },
-              panning: _this.makeOption('panning', d, di, t, (t / max)),
+              panning: _this.makeOption('panning', data, di, t, (t / max)),
               filter: {
                 frequency: 900
               },

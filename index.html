@@ -43,8 +43,6 @@
 
         <pre>
 var basic = new Daud({
-  type: 'linear',
-  instrument: 'piano',
   data: [0.65, 1.01, 1.33, 1.36, 1.8, 2, 2.5, 3, 3.2, 4.7, 4.8, 6]
 });</pre>
 
@@ -59,10 +57,8 @@ var basic = new Daud({
         <p>What if we have another dimension to our data; for instance we want to hear the height of the skier.  We can represent this in the pitch (or note) where a higher pitch is a taller person.</p>
 
         <pre>
+var notes = ['C4', 'D4', 'E4', 'F4', 'G4', 'A4', 'B4'];
 var dimension = new Daud({
-  type: 'linear',
-  instrument: 'piano',
-  note: 'B5',
   note: function(d, i, t, p) {
     // Adjust note/pitch to height in one octave
     return notes[Math.floor((d.height / 2) * 6)];
@@ -81,6 +77,34 @@ var dimension = new Daud({
 });</pre>
 
         <button data-daud="dimension" type="button" class="btn btn-default">
+          <span class="glyphicon glyphicon-play" aria-hidden="true"></span> Play example
+        </button>
+      </div>
+
+      <div class="daud-example">
+        <h3>Panning dimension</h3>
+
+        <p>What if we instead using panning to translate the height into a binary listening experience.  This uses some randomly generated data.</p>
+
+        <pre>
+var panning = new Daud({
+  panning: function(d, i, t, p) {
+    // Use stero panning to go left and right depending on height
+    return (d.height &lt; 1) ? -1 : 1;
+  },
+  time: function(d, i, t, p) {
+    // Tell daud that the time is the value in seconds
+    return d.value * 1000;
+  },
+  data: _.map(_.range(30), function(r, ri) {
+    return {
+      value: (ri / 3) + (Math.random() / 0.2),
+      height: Math.random() * 2
+    };
+  })
+});</pre>
+
+        <button data-daud="panning" type="button" class="btn btn-default">
           <span class="glyphicon glyphicon-play" aria-hidden="true"></span> Play example
         </button>
       </div>
@@ -108,8 +132,6 @@ var dimension = new Daud({
 
       // Basic example
       var basic = new Daud({
-        type: 'linear',
-        instrument: 'piano',
         data: [0.65, 1.01, 1.33, 1.36, 1.8, 2, 2.5, 3, 3.2, 4.7, 4.8, 6]
       });
       $('[data-daud="basic"]').on('click', function(e) {
@@ -119,9 +141,6 @@ var dimension = new Daud({
 
       // Dimensional data
       var dimension = new Daud({
-        type: 'linear',
-        instrument: 'piano',
-        note: 'B5',
         note: function(d, i, t, p) {
           // Adjust note/pitch to height in one octave
           return notes[Math.floor((d.height / 2) * 6)];
@@ -141,6 +160,28 @@ var dimension = new Daud({
       $('[data-daud="dimension"]').on('click', function(e) {
         e.preventDefault();
         dimension.play();
+      });
+
+      // Panning
+      var panning = new Daud({
+        panning: function(d, i, t, p) {
+          // Use stero panning to go left and right depending on height
+          return (d.height < 1) ? -1 : 1;
+        },
+        time: function(d, i, t, p) {
+          // Tell daud that the time is the value in seconds
+          return d.value * 1000;
+        },
+        data: _.map(_.range(30), function(r, ri) {
+          return {
+            value: (ri / 3) + (Math.random() / 0.2),
+            height: Math.random() * 2
+          };
+        })
+      });
+      $('[data-daud="panning"]').on('click', function(e) {
+        e.preventDefault();
+        panning.play();
       });
     </script>
   </body>

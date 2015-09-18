@@ -33,7 +33,7 @@
     volume: 1,
     note: 'C4',
     noteTime: 300,
-    panning: [1, -1, 10],
+    panning: 0,
 
     // The value for a datapoint is either the 'value'
     // property or the datapoint itself
@@ -47,6 +47,34 @@
       return _.isObject(d) && d.time ? d.time : d * 1000;
     }
   };
+
+  // Instruments
+  var instruments = _.extend({}, Wad.presets, {
+    flute: {
+      source: 'square',
+      env: {
+        attack: 0.015,
+        decay: 0.002,
+        sustain: 0.5,
+        hold: 2.5,
+        release: 0.3
+      },
+      filter: {
+        type: 'lowpass',
+        frequency: 600,
+        q: 7,
+        env: {
+          attack: 0.7,
+          frequency: 1600
+        }
+      },
+      vibrato: {
+        attack: 8,
+        speed: 8,
+        magnitude: 100
+      }
+    }
+  });
 
   // Constructor.
   var Daud = function(options) {
@@ -91,7 +119,8 @@
       var animData = _.map(this.options.data, function(data, di) {
         var d = _this.makeOption('value', data, di);
         var t = _this.makeOption('time', data, di);
-        var i = new Wad(Wad.presets[_this.makeOption('instrument', data, di, t, (t / max))]);
+        var instrument = _this.makeOption('instrument', data, di, t, (t / max));
+        var i = new Wad((_.isObject(instrument)) ? instrument : instruments[instrument]);
 
         return {
           i: i,
@@ -101,20 +130,8 @@
           play: function() {
             i.play({
               volume: _this.makeOption('volume', data, di, t, (t / max)),
-              wait: 0,
-              loop: false,
               pitch: _this.makeOption('note', data, di, t, (t / max)),
-              label: 'N',
-              env: {
-                hold: 9001
-              },
-              panning: _this.makeOption('panning', data, di, t, (t / max)),
-              filter: {
-                frequency: 900
-              },
-              delay: {
-                delayTime: 0.8
-              }
+              panning: _this.makeOption('panning', data, di, t, (t / max))
             });
 
             setTimeout(function() {

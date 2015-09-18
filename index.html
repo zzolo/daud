@@ -1,0 +1,147 @@
+<!doctype html>
+<html class="no-js" lang="">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <title>Daud</title>
+    <meta name="description" content="A data sonification/audioization library" />
+
+    <!-- Twitter Card data -->
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:site" content="@zzolo">
+    <meta name="twitter:title" content="Daud">
+    <meta name="twitter:description" content="A data sonification/audioization library">
+    <meta name="twitter:creator" content="@zzolo">
+    <meta name="twitter:image" content="TODO.png">
+
+    <!-- Open Graph data -->
+    <meta property="og:title" content="Daud">
+    <meta property="og:type" content="article">
+    <meta property="og:url" content="https://zzolo.github.io/daud/">
+    <meta property="og:image" content="TODO.png">
+    <meta property="og:description" content="A data sonification/audioization library.">
+    <meta property="og:site_name" content="Daud">
+
+    <!-- Example CSS -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css">
+
+    <!-- Main library CSS -->
+    <link rel="stylesheet" href="src/daud.css">
+  </head>
+  <body class="">
+    <div class="container">
+      <h1>Daud</h1>
+
+      <p><strong>Daud</strong> is a data sonification (audioization) library for the browser.</p>
+
+      <div class="daud-example">
+        <h3>Simple example</h3>
+
+        <p>This is just a basic example.  By default, we assume the data is just the number of seconds to play a sound.  This is similar to the NYT article <a href="http://www.nytimes.com/interactive/2010/02/26/sports/olympics/20100226-olysymphony.html" target="_blank">"Fractions of a Second: An Olympic Musical"</a>.</p>
+
+        <pre>
+var basic = new Daud({
+  type: 'linear',
+  instrument: 'piano',
+  data: [0.65, 1.01, 1.33, 1.36, 1.8, 2, 2.5, 3, 3.2, 4.7, 4.8, 6]
+});</pre>
+
+        <button data-daud="basic" type="button" class="btn btn-default">
+          <span class="glyphicon glyphicon-play" aria-hidden="true"></span> Play example
+        </button>
+      </div>
+
+      <div class="daud-example">
+        <h3>Another dimension</h3>
+
+        <p>What if we have another dimension to our data; for instance we want to hear the height of the skier.  We can represent this in the pitch (or note) where a higher pitch is a taller person.</p>
+
+        <pre>
+var dimension = new Daud({
+  type: 'linear',
+  instrument: 'piano',
+  note: 'B5',
+  note: function(d, i, t, p) {
+    // Adjust note/pitch to height in one octave
+    return notes[Math.floor((d.height / 2) * 6)];
+  },
+  time: function(d, i, t, p) {
+    // Tell daud that the time is the value in seconds
+    return d.value * 1000;
+  },
+  data: [
+    { value: 0.5, height: 1.5 },
+    { value: 0.95, height: 1.9 },
+    { value: 1.2, height: 0.9 },
+    { value: 1.5, height: 1.2 },
+    { value: 1.89, height: 0.3 },
+  ]
+});</pre>
+
+        <button data-daud="dimension" type="button" class="btn btn-default">
+          <span class="glyphicon glyphicon-play" aria-hidden="true"></span> Play example
+        </button>
+      </div>
+
+      <div style="height: 3em"></div>
+    </div>
+
+    <!-- Dependencies -->
+    <script src="bower_components/underscore/underscore.js"></script>
+    <script src="bower_components/Wad/build/wad.js"></script>
+
+    <!-- Main library JS -->
+    <script src="src/daud.js"></script>
+
+    <!-- Example JS -->
+    <script src="//code.jquery.com/jquery-1.11.3.min.js"></script>
+
+    <!-- Make examples -->
+    <script id="example-javascript">
+      var notes = ['C4', 'D4', 'E4', 'F4', 'G4', 'A4', 'B4',
+        'C5', 'D5', 'E5', 'F5', 'G5', 'A5', 'B5'];
+
+      // Instruments
+      // https://github.com/rserota/wad/blob/master/src/wad.js#L1373
+
+      // Basic example
+      var basic = new Daud({
+        type: 'linear',
+        instrument: 'piano',
+        data: [0.65, 1.01, 1.33, 1.36, 1.8, 2, 2.5, 3, 3.2, 4.7, 4.8, 6]
+      });
+      $('[data-daud="basic"]').on('click', function(e) {
+        e.preventDefault();
+        basic.play();
+      });
+
+      // Dimensional data
+      var dimension = new Daud({
+        type: 'linear',
+        instrument: 'piano',
+        note: 'B5',
+        note: function(d, i, t, p) {
+          // Adjust note/pitch to height in one octave
+          return notes[Math.floor((d.height / 2) * 6)];
+        },
+        time: function(d, i, t, p) {
+          // Tell daud that the time is the value in seconds
+          return d.value * 1000;
+        },
+        data: [
+          { value: 0.5, height: 1.5 },
+          { value: 0.95, height: 1.9 },
+          { value: 1.2, height: 0.9 },
+          { value: 1.5, height: 1.2 },
+          { value: 1.89, height: 0.3 },
+        ]
+      });
+      $('[data-daud="dimension"]').on('click', function(e) {
+        e.preventDefault();
+        dimension.play();
+      });
+    </script>
+  </body>
+</html>

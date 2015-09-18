@@ -1,0 +1,26 @@
+{
+  "name": "daud",
+  "version": "0.0.1",
+  "homepage": "https://github.com/zzolo/daud",
+  "authors": [
+    "Alan Palazzolo <github@zzolo.org>"
+  ],
+  "description": "A data sonification/audioization library",
+  "main": "dist/daud.js",
+  "moduleType": [
+    "amd",
+    "globals"
+  ],
+  "license": "MIT",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ],
+  "dependencies": {
+    "Wad": "wad#~2.2.3",
+    "underscore": "~1.8.3"
+  }
+}

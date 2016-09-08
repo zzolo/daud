@@ -20,7 +20,7 @@
     "tests"
   ],
   "dependencies": {
-    "Wad": "wad#~2.2.3",
+    "Wad": "wad#~2.5.0",
     "underscore": "~1.8.3"
   }
 }

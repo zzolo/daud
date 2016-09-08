@@ -49,7 +49,7 @@ button:focus {
 }
 .loop-track {
     display : inline-block;
-    height : 200px;
+    height : 120px;
     width : 130px;
     max-width: 9vw;
     /*border : 3px solid black;*/
@@ -162,4 +162,17 @@ button:focus {
 .settings-modal .modal-body {
     max-height: 65vh;
     overflow:scroll;
+}
+
+.drums-settings [type="range"] {
+    position: relative;
+    top: 2px;
+}
+
+#help span {
+    font-size: 100px;
+    font-weight: bold;
+    font-family: ariel;
+    position:relative;
+    bottom: 20px;
 }

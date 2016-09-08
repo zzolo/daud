@@ -1,16 +1,34 @@
-﻿
+
 
 /** Let's do the vendor-prefix dance. **/
-    var audioContext = window.AudioContext || window.webkitAudioContext;
-    var context      = new audioContext();
-    getUserMedia     = navigator.mozGetUserMedia || navigator.webkitGetUserMedia || navigator.getUserMedia;
-    if ( getUserMedia ) {
-        // console.log('get user media is supported')
-        getUserMedia = getUserMedia.bind(navigator);
+var audioContext = window.AudioContext || window.webkitAudioContext;
+var context      = new audioContext();
+
+// create a wrapper for old versions of `getUserMedia`
+var getUserMedia = (function(window) {
+    if (window.navigator.mediaDevices && window.navigator.mediaDevices.getUserMedia) {
+        // Browser supports promise based `getUserMedia`
+        return window.navigator.mediaDevices.getUserMedia.bind(window.navigator.mediaDevices);
     }
-    else {
-        console.log('get user media is not supported');
+    var navigatorGetUserMedia = window.navigator.getUserMedia || window.navigator.webkitGetUserMedia || window.navigator.mozGetUserMedia;
+    if (navigatorGetUserMedia) {
+        // Browser supports old `getUserMedia` with callbacks.
+        return function(constraints) {
+            return new Promise(function(resolve, reject) {
+                navigatorGetUserMedia.call(window.navigator, constraints, resolve, reject);
+            });
+        };
     }
+
+    return function() {
+        throw "getUserMedia is unsupported";
+    };
+}(window));
+
+if (getUserMedia)
+    console.log("Your browser supports getUserMedia.");
+else
+    console.log("Your browser does not support getUserMedia.");
 /////////////////////////////////////////
 
 var Wad = (function(){
@@ -48,14 +66,14 @@ var Wad = (function(){
             attack  : arg.env ? valueOrDefault(arg.env.attack,  1) : 0,    // time in seconds from onset to peak volume
             decay   : arg.env ? valueOrDefault(arg.env.decay,   0) : 0,    // time in seconds from peak volume to sustain volume
             sustain : arg.env ? valueOrDefault(arg.env.sustain, 1) : 1,    // sustain volume level, as a percent of peak volume. min:0, max:1
-            hold    : arg.env ? valueOrDefault(arg.env.hold, 3.14) : 3.14, // time in seconds to maintain sustain volume
+            hold    : arg.env ? valueOrDefault(arg.env.hold, 3.14159) : 3.14159, // time in seconds to maintain sustain volume
             release : arg.env ? valueOrDefault(arg.env.release, 0) : 0     // time in seconds from sustain volume to zero volume
         };
         that.defaultEnv = {
             attack  : arg.env ? valueOrDefault(arg.env.attack,  1) : 0,    // time in seconds from onset to peak volume
             decay   : arg.env ? valueOrDefault(arg.env.decay,   0) : 0,    // time in seconds from peak volume to sustain volume
             sustain : arg.env ? valueOrDefault(arg.env.sustain, 1) : 1,    // sustain volume level, as a percent of peak volume. min:0, max:1
-            hold    : arg.env ? valueOrDefault(arg.env.hold, 3.14) : 3.14, // time in seconds to maintain sustain volume
+            hold    : arg.env ? valueOrDefault(arg.env.hold, 3.14159) : 3.14159, // time in seconds to maintain sustain volume
             release : arg.env ? valueOrDefault(arg.env.release, 0) : 0     // time in seconds from sustain volume to zero volume
         };
     }
@@ -99,6 +117,9 @@ Don't let the Wad play until all necessary files have been downloaded. **/
         request.onload = function(){
             context.decodeAudioData(request.response, function (decodedBuffer){
                 that.decodedBuffer = decodedBuffer;
+                if ( that.env.hold === 3.14159 ) { // audio buffers should not use the default hold
+                    that.env.hold = that.decodedBuffer.duration + 1
+                }
                 if ( callback ) { callback(that); }
                 that.playable++;
                 if ( that.playOnLoad ) { that.play(that.playOnLoadArg); }
@@ -182,7 +203,7 @@ Check out http://www.voxengo.com/impulses/ for free impulse responses. **/
         }
 
         else {
-            that.panning = { 
+            that.panning = {
                 location : 0,
                 type     : 'stereo',
             };
@@ -209,24 +230,24 @@ Check out http://www.voxengo.com/impulses/ for free impulse responses. **/
         else { that.delay = null; }
     };
 /** Special initialization and configuration for microphone Wads **/
-    var getConsent = function(that, arg){
+    var getConsent = function(that, arg) {
         that.nodes             = [];
         that.mediaStreamSource = null;
         that.gain              = null;
-        getUserMedia({ audio : true , video : false}, function (stream){
+        return getUserMedia({audio: true, video: false}).then(function(stream) {
             // console.log('got stream')
             that.mediaStreamSource = context.createMediaStreamSource(stream);
-
+            Wad.micConsent = true
             setUpMic(that, arg);
-
-        }, function(error) { console.log('Error setting up microphone input: ', error); }); // This is the error callback.
+            return that;
+        }).catch(function(error) { console.log('Error setting up microphone input: ', error); }); // This is the error callback.
     };
 ////////////////////////////////////////////////////////////////////
-    
+
     var setUpMic = function(that, arg){
         that.nodes           = [];
         that.gain            = context.createGain();
-        that.gain.gain.value = that.volume;
+        that.gain.gain.value = valueOrDefault(arg.volume,that.volume);
         that.nodes.push(that.mediaStreamSource);
         that.nodes.push(that.gain);
         // console.log('that ', arg)
@@ -241,7 +262,7 @@ Check out http://www.voxengo.com/impulses/ for free impulse responses. **/
         if ( that.delay || arg.delay ) {
             setUpDelayOnPlay(that, arg);
         }
-
+        setUpTunaOnPlay(that, arg)
         that.setUpExternalFxOnPlay(arg, context);
     }
 
@@ -257,7 +278,7 @@ Check out http://www.voxengo.com/impulses/ for free impulse responses. **/
         this.globalReverb  = arg.globalReverb || false;
         this.gain          = [];
         this.loop          = arg.loop || false;
-
+        this.tuna          = arg.tuna || null;
         constructEnv(this, arg);
         constructFilter(this, arg);
         constructVibrato(this, arg);
@@ -300,7 +321,11 @@ Check out http://www.voxengo.com/impulses/ for free impulse responses. **/
 ////////////////////////////////////////////////////////////////////////////////////////////////////////
         else { arg.callback && arg.callback(this) }
     };
-
+    Wad.micConsent = false
+    Wad.audioContext = context
+    if ( window.Tuna != undefined ) {
+        Wad.tuna = new Tuna(Wad.audioContext)
+    }
 
 /** When a note is played, these two functions will schedule changes in volume and filter frequency,
 as specified by the volume envelope and filter envelope **/
@@ -344,7 +369,7 @@ with special handling for nodes with custom interfaces (e.g. reverb, delay). **/
             }
             from.connect(to);
         }
-        if ( that.nodes[that.nodes.length-1].interface === 'custom') { 
+        if ( that.nodes[that.nodes.length-1].interface === 'custom') {
             var lastStop = that.nodes[that.nodes.length-1].output;
         }
         else { // assume native interface
@@ -558,7 +583,29 @@ with special handling for nodes with custom interfaces (e.g. reverb, delay). **/
         that.compressor.threshold.value = valueOrDefault(arg.compressor.threshold, that.compressor.threshold.value);
         that.nodes.push(that.compressor);
     };
+    var setUpTunaOnPlay = function(that, arg){
+        if ( !( that.tuna || arg.tuna ) ) { return }
+        var tunaConfig = {}
+        if ( that.tuna ) {
+            for ( var key in that.tuna ) {
+                tunaConfig[key] = that.tuna[key]
+            }
+        }
 
+        // overwrite settings from `this` with settings from arg
+        if ( arg.tuna ) {
+            for ( var key in arg.tuna ) {
+                tunaConfig[key] = arg.tuna[key]
+            }
+        }
+        console.log('tunaconfig: ', tunaConfig)
+        for ( var key in tunaConfig) {
+            console.log(key)
+            var tunaEffect = new Wad.tuna[key](tunaConfig[key])
+            that.nodes.push(tunaEffect)
+        }
+        // console.log(that.nodes)
+    }
 ///
 
 /** Method to allow users to setup external fx in the constructor **/
@@ -588,20 +635,28 @@ then finally play the sound by calling playEnv() **/
             this.playOnLoadArg = arg;
         }
 
-        else if ( this.source === 'mic' ) { 
-            if ( arg.arg === null ) {
-                plugEmIn(this, arg);
+        else if ( this.source === 'mic' ) {
+            if ( Wad.micConsent ) {
+                if ( arg.arg === null ) {
+                    plugEmIn(this, arg);
+                }
+                else {
+                    constructFilter(this, arg);
+                    constructVibrato(this, arg);
+                    constructTremolo(this, arg);
+                    constructReverb(this, arg);
+                    this.constructExternalFx(arg, context);
+                    constructPanning(this, arg);
+                    constructDelay(this, arg);
+                    setUpMic(this, arg);
+                    plugEmIn(this, arg);
+                }
             }
-            else {
-                constructFilter(this, arg);
-                constructVibrato(this, arg);
-                constructTremolo(this, arg);
-                constructReverb(this, arg);
-                this.constructExternalFx(arg, context);
-                constructPanning(this, arg);
-                constructDelay(this, arg);
-                setUpMic(this, arg);
-                plugEmIn(this, arg);
+            else { 
+                console.log('You have not given your browser permission to use your microphone.')
+                getConsent(this, arg).then(function (that) {
+                    that.play(arg);
+                });
             }
         }
 
@@ -640,6 +695,7 @@ then finally play the sound by calling playEnv() **/
     or defaults to the constructor argument if the filter and filter envelope are not set on play() **/
             setUpFilterOnPlay(this, arg);
     ///////////////////////////////////////////////////////////////////////////////////////////////////
+            setUpTunaOnPlay(this, arg);
 
             this.setUpExternalFxOnPlay(arg, context);
 
@@ -676,23 +732,60 @@ then finally play the sound by calling playEnv() **/
         if ( arg.callback ) { arg.callback(this); }
         return this;
     };
+
 //////////////////////////////////////////////////////////////////////////////////////////
 
 
-/** Change the volume of a Wad at any time, including during playback **/
+    /** Change the volume of a Wad at any time, including during playback **/
     Wad.prototype.setVolume = function(volume){
         this.defaultVolume = volume;
         if ( this.gain.length > 0 ) { this.gain[0].gain.value = volume; }
         return this;
     };
-/////////////////////////////////////////////////////////////////////////
+
+    /**
+    Change the playback speed of a Wad during playback.
+    inputSpeed is a value of 0 < speed, and is the rate of playback of the audio.
+    E.g. if input speed = 2.0, the playback will be twice as fast
+    **/
+    Wad.prototype.setSpeed = function(inputSpeed) {
+
+        //Check/Save the input
+        var speed;
+        if(inputSpeed && inputSpeed > 0) speed = inputSpeed;
+        else speed = 0;
+
+        //Check if we have a soundsource (Though we always should)
+        if(this.soundSource) {
+
+            //Set the value
+            this.soundSource.playbackRate.value = speed;
+        }
+        else {
+
+            //Inform that there is no delay on the current wad
+            console.log("Sorry, but the wad does not contain a soundSource!");
+        }
+
+        return this;
+    };
+
+    Wad.prototype.setPitch = function(pitch){
+        if ( pitch in Wad.pitches ) {
+          this.soundSource.frequency.value = Wad.pitches[pitch];
+        }
+        else {
+          this.soundSource.frequency.value = pitch;
+        }
+        return this;
+    };
 
     Wad.prototype.setDetune = function(detune){
         this.soundSource.detune.value = detune;
         return this;
     };
 
-/** Change the panning of a Wad at any time, including during playback **/
+    /** Change the panning of a Wad at any time, including during playback **/
     Wad.prototype.setPanning = function(panning){
         this.panning.location = panning;
         if ( isArray(panning) && this.panning.type === '3d' && this.panning.node ) {
@@ -702,13 +795,97 @@ then finally play the sound by calling playEnv() **/
         else if ( typeof panning === 'number' && this.panning.type === 'stereo' && this.panning.node) {
             this.panning.node.pan.value = panning;
         }
-        
+
         if ( isArray(panning) ) { this.panning.type = '3d' }
         else if ( typeof panning === 'number' ) { this.panning.type = 'stereo' }
         return this;
     };
 
-//////////////////////////////////////////////////////////////////////////
+    /**
+    Change the Reverb of a Wad at any time, including during playback.
+    inputWet is a value of 0 < wetness/gain < 1
+    **/
+    Wad.prototype.setReverb = function(inputWet) {
+
+        //Check/Save the input
+
+        var wet;
+        if(inputWet && inputWet > 0 && inputWet < 1) wet = inputWet;
+        else if(inputWet >= 1) wet = 1;
+        else wet = 0;
+
+        //Check if we have delay
+        if(this.reverb) {
+
+            //Set the value
+            this.reverb.wet = wet;
+
+            //Set the node's value, if it exists
+            if(this.reverb.node) {
+
+                this.reverb.node.wet.gain.value = wet;
+            }
+        }
+        else {
+
+            //Inform that there is no reverb on the current wad
+            console.log("Sorry, but the wad does not contain Reverb!");
+        }
+
+        return this;
+    };
+
+
+    /**
+    Change the Delay of a Wad at any time, including during playback.
+    inputTime is a value of time > 0, and is the time in seconds between each delayed playback.
+    inputWet is a value of gain 0 < inputWet < 1, and is Relative volume change between the original sound and the first delayed playback.
+    inputFeedback is a value of gain 0 < inputFeedback < 1, and is Relative volume change between each delayed playback and the next.
+    **/
+    Wad.prototype.setDelay = function(inputTime, inputWet, inputFeedback){
+
+        //Check/Save the input
+        var time;
+        if(inputTime && inputTime > 0) time = inputTime;
+        else time = 0;
+
+        var wet;
+        if(inputWet && inputWet > 0 && inputWet < 1) wet = inputWet;
+        else if(inputWet >= 1) wet = 1;
+        else wet = 0;
+
+        var feedback;
+        if(inputFeedback && inputFeedback > 0 && inputFeedback < 1) feedback = inputFeedback;
+        else if(inputFeedback >= 1) feedback = 1;
+        else feedback = 0;
+
+        //Check if we have delay
+        if(this.delay) {
+
+            //Set the value
+            this.delay.delayTime = time;
+            this.delay.wet = wet;
+            this.delay.feedback = feedback;
+
+            //Set the node's value, if it exists
+            if(this.delay.delayNode) {
+
+                this.delay.delayNode.delayNode.delayTime.value = time;
+                this.delay.delayNode.wetNode.gain.value = wet;
+                this.delay.delayNode.feedbackNode.gain.value = feedback;
+            }
+        }
+        else {
+
+            //Inform that there is no delay on the current wad
+            console.log("Sorry, but the wad does not contain delay!");
+        }
+
+        return this;
+    };
+
+
+//////////////////////////////////////////////////////////////////////////////////////////
 
 
 /** If multiple instances of a sound are playing simultaneously, stop() only can stop the most recent one **/
@@ -729,9 +906,10 @@ then finally play the sound by calling playEnv() **/
                 this.gain[0].gain.linearRampToValueAtTime(.0001, context.currentTime + this.env.release);
             }
         }
-        else {
+        else if (Wad.micConsent ) {
             this.mediaStreamSource.disconnect(0);
         }
+        else { console.log('You have not given your browser permission to use your microphone.')}
         if ( this.tremolo ) {
             this.tremolo.wad.stop()
         }
@@ -829,6 +1007,8 @@ then finally play the sound by calling playEnv() **/
         this.volume            = arg.volume || 1;
         this.output            = context.createGain();
         this.output.gain.value = this.volume;
+        this.tuna              = arg.tuna || null;
+
         if ( !( typeof Recorder === 'undefined' ) && arg.recConfig ) { // Recorder should be defined, unless you're running the unconcatenated source version and forgot to include recorder.js.
             this.rec               = new Recorder(this.output, arg.recConfig);
             this.rec.recordings    = [];
@@ -859,7 +1039,7 @@ then finally play the sound by calling playEnv() **/
 
         constructDelay(this, arg);
         setUpDelayOnPlay(this, arg);
-
+        setUpTunaOnPlay(this, arg);
         this.nodes.push(this.output);
         plugEmIn(this, arg);
         this.isSetUp = true;
@@ -976,7 +1156,7 @@ Copyright (c) 2014 Chris Wilson
 
 /** If a Wad is created with reverb without specifying a URL for the impulse response,
 grab it from the defaultImpulse URL **/
-    Wad.defaultImpulse = 'http://www.codecur.io/us/sendaudio/widehall.wav';
+    Wad.defaultImpulse = 'https://www.codecur.io/audio/widehall.wav';
 
     // This method is deprecated.
     Wad.setGlobalReverb = function(arg){
@@ -1000,10 +1180,10 @@ grab it from the defaultImpulse URL **/
 //////////////////////////////////////////////////////////////////////////////////////
 //  Utility function to avoid javascript type conversion bug checking zero values   //
 
-var valueOrDefault = function(value, def) {
-    var val = (value == null) ? def : value;
-    return val;
-};
+    var valueOrDefault = function(value, def) {
+        var val = (value == null) ? def : value;
+        return val;
+    };
 
 //////////////////////////////////////////////////////////////////////////////////////
 /** This object is a mapping of note names to frequencies. **/
@@ -1012,6 +1192,8 @@ var valueOrDefault = function(value, def) {
         'A#0' : 29.1352,
         'Bb0' : 29.1352,
         'B0'  : 30.8677,
+        'B#0'  : 32.7032,
+        'Cb1'  : 30.8677,
         'C1'  : 32.7032,
         'C#1' : 34.6478,
         'Db1' : 34.6478,
@@ -1019,6 +1201,8 @@ var valueOrDefault = function(value, def) {
         'D#1' : 38.8909,
         'Eb1' : 38.8909,
         'E1'  : 41.2034,
+        'Fb1'  : 41.2034,
+        'E#1'  : 43.6535,
         'F1'  : 43.6535,
         'F#1' : 46.2493,
         'Gb1' : 46.2493,
@@ -1029,6 +1213,8 @@ var valueOrDefault = function(value, def) {
         'A#1' : 58.2705,
         'Bb1' : 58.2705,
         'B1'  : 61.7354,
+        'Cb2'  : 61.7354,
+        'B#1'  : 65.4064,
         'C2'  : 65.4064,
         'C#2' : 69.2957,
         'Db2' : 69.2957,
@@ -1036,6 +1222,8 @@ var valueOrDefault = function(value, def) {
         'D#2' : 77.7817,
         'Eb2' : 77.7817,
         'E2'  : 82.4069,
+        'Fb2'  : 82.4069,
+        'E#2'  : 87.3071,
         'F2'  : 87.3071,
         'F#2' : 92.4986,
         'Gb2' : 92.4986,
@@ -1046,6 +1234,8 @@ var valueOrDefault = function(value, def) {
         'A#2' : 116.541,
         'Bb2' : 116.541,
         'B2'  : 123.471,
+        'Cb3'  : 123.471,
+        'B#2'  : 130.813,
         'C3'  : 130.813,
         'C#3' : 138.591,
         'Db3' : 138.591,
@@ -1053,6 +1243,8 @@ var valueOrDefault = function(value, def) {
         'D#3' : 155.563,
         'Eb3' : 155.563,
         'E3'  : 164.814,
+        'Fb3'  : 164.814,
+        'E#3'  : 174.614,
         'F3'  : 174.614,
         'F#3' : 184.997,
         'Gb3' : 184.997,
@@ -1063,6 +1255,8 @@ var valueOrDefault = function(value, def) {
         'A#3' : 233.082,
         'Bb3' : 233.082,
         'B3'  : 246.942,
+        'Cb4'  : 246.942,
+        'B#3'  : 261.626,
         'C4'  : 261.626,
         'C#4' : 277.183,
         'Db4' : 277.183,
@@ -1070,6 +1264,8 @@ var valueOrDefault = function(value, def) {
         'D#4' : 311.127,
         'Eb4' : 311.127,
         'E4'  : 329.628,
+        'Fb4'  : 329.628,
+        'E#4'  : 349.228,
         'F4'  : 349.228,
         'F#4' : 369.994,
         'Gb4' : 369.994,
@@ -1080,6 +1276,8 @@ var valueOrDefault = function(value, def) {
         'A#4' : 466.164,
         'Bb4' : 466.164,
         'B4'  : 493.883,
+        'Cb5'  : 493.883,
+        'B#4'  : 523.251,
         'C5'  : 523.251,
         'C#5' : 554.365,
         'Db5' : 554.365,
@@ -1087,6 +1285,8 @@ var valueOrDefault = function(value, def) {
         'D#5' : 622.254,
         'Eb5' : 622.254,
         'E5'  : 659.255,
+        'Fb5'  : 659.255,
+        'E#5'  : 698.456,
         'F5'  : 698.456,
         'F#5' : 739.989,
         'Gb5' : 739.989,
@@ -1097,13 +1297,17 @@ var valueOrDefault = function(value, def) {
         'A#5' : 932.328,
         'Bb5' : 932.328,
         'B5'  : 987.767,
+        'Cb6'  : 987.767,
+        'B#5'  : 1046.50,
         'C6'  : 1046.50,
         'C#6' : 1108.73,
         'Db6' : 1108.73,
         'D6'  : 1174.66,
         'D#6' : 1244.51,
         'Eb6' : 1244.51,
+        'Fb6'  : 1318.51,
         'E6'  : 1318.51,
+        'E#6'  : 1396.91,
         'F6'  : 1396.91,
         'F#6' : 1479.98,
         'Gb6' : 1479.98,
@@ -1114,6 +1318,8 @@ var valueOrDefault = function(value, def) {
         'A#6' : 1864.66,
         'Bb6' : 1864.66,
         'B6'  : 1975.53,
+        'Cb7'  : 1975.53,
+        'B#6'  : 2093.00,
         'C7'  : 2093.00,
         'C#7' : 2217.46,
         'Db7' : 2217.46,
@@ -1121,6 +1327,8 @@ var valueOrDefault = function(value, def) {
         'D#7' : 2489.02,
         'Eb7' : 2489.02,
         'E7'  : 2637.02,
+        'Fb7'  : 2637.02,
+        'E#7'  : 2793.83,
         'F7'  : 2793.83,
         'F#7' : 2959.96,
         'Gb7' : 2959.96,
@@ -1131,6 +1339,8 @@ var valueOrDefault = function(value, def) {
         'A#7' : 3729.31,
         'Bb7' : 3729.31,
         'B7'  : 3951.07,
+        'Cb8' : 3951.07,
+        'B#7'  : 4186.01,
         'C8'  : 4186.01
     };
 
@@ -1235,14 +1445,25 @@ var valueOrDefault = function(value, def) {
         'C8'
     ];
 //////////////////////////////////////////////////////////////
+    Wad.assignMidiMap = function(midiMap, which, success, failure){
+        var which = which || 0;
+        navigator.requestMIDIAccess().then(function(){
+            if ( Wad.midiInputs[which] ) {
+                Wad.midiInputs[which].onmidimessage = midiMap;
+                if  ( typeof success === 'function' ) { success() }
+            }
+            else if ( typeof failure === 'function' ) { failure() }
 
+        })
+
+    }
     Wad.midiInstrument = {
         play : function() { console.log('playing midi')  },
         stop : function() { console.log('stopping midi') }
     };
     Wad.midiInputs  = [];
 
-    midiMap = function(event){
+    var midiMap = function(event){
         console.log(event.receivedTime, event.data);
         if ( event.data[0] === 144 ) { // 144 means the midi message has note data
             // console.log('note')
@@ -1288,7 +1509,7 @@ var valueOrDefault = function(value, def) {
         // o.send( [ 0x80, 0x45, 0x7f ], window.performance.now() + 1000 );  // full velocity A4 note off in one second.
     };
     var onErrorCallback = function(err){
-        console.log("uh-oh! Something went wrong!  Error code: " + err.code );
+        console.log("Failed to get MIDI access", err);
     };
 
     if ( navigator && navigator.requestMIDIAccess ) {
@@ -1296,10 +1517,7 @@ var valueOrDefault = function(value, def) {
             navigator.requestMIDIAccess().then(onSuccessCallback, onErrorCallback);
         }
         catch(err) {
-            var text = "There was an error on this page.\n\n";
-            text += "Error description: " + err.message + "\n\n";
-            text += "Click OK to continue.\n\n";
-            console.log(text);
+            console.log("Failed to get MIDI access", err);
         }
     }
 

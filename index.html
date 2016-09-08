@@ -143,14 +143,61 @@ var instrument = new Daud({
     { value: 3.18, height: 1.2, color: 'red' },
     { value: 3.9, height: 0.9, color: 'blue' }
   ]
-});
-$('[data-daud="instrument"]').on('click', function(e) {
-  e.preventDefault();
-  instrument.play();
 });</pre>
 
         <button data-daud="instrument" type="button" class="btn btn-default">
           <span class="glyphicon glyphicon-play" aria-hidden="true"></span> Play example
+        </button>
+      </div>
+
+      <div class="daud-example">
+        <h3>Real world example</h3>
+
+        <p>As part of Harlem Heat, sensors were put inside apartments in Harlem (mostly) without air conditioning.  The astounding thing is that inside the apartment, the temperature will gradually rise over days as it gets hot outside, but unlike the outside temperature, the temperature inside remains hot even at night.  Play the outside heat index for an average day, then do the same for the inside, and you can hear how the outside goes up and down in pitch (heat index), while the inside does not.</p>
+
+        <pre>
+var heatNotes = [
+  'C2', 'D2', 'E2', 'F2', 'G2', 'A2', 'B2',
+  'C3', 'D3', 'E3', 'F3', 'G3', 'A3', 'B3',
+  'C4', 'D4', 'E4', 'F4', 'G4', 'A4', 'B4',
+  'C5', 'D5', 'E5', 'F5', 'G5', 'A5', 'B5',
+  'C6', 'D6', 'E6', 'F6', 'G6', 'A6', 'B6'
+];
+var outsideHeat = new Daud({
+  note: function(d, i, t, p) {
+    // Adjust note/pitch heat index
+    // Make 75 deg middle C
+    return heatNotes[Math.floor(d.hi) - 80 + 14];
+  },
+  time: function(d, i, t, p) {
+    // Tell daud that the time is determined by the hours
+    return d.hour * 1000;
+  },
+  instrument: function(d, i, t, p) {
+    // Hold the note a bit longer
+    var instrument = JSON.parse(JSON.stringify(this.instruments.piano));
+    instrument.env.release = 1;
+    return instrument;
+  },
+  data: [
+    {"hour":0,"hi":80.06},
+    {"hour":0.5,"hi":79.46},
+    {"hour":1,"hi":78.87},
+    {"hour":1.5,"hi":78.81},
+    // ...
+  ]
+});</pre>
+
+        <button data-daud="outside-heat" type="button" class="btn btn-default">
+          <span class="glyphicon glyphicon-play" aria-hidden="true"></span> Play outside heat index
+        </button>
+
+        <button data-daud="inside-heat" type="button" class="btn btn-default">
+          <span class="glyphicon glyphicon-play" aria-hidden="true"></span> Play inside heat index
+        </button>
+
+        <button data-daud="heat" type="button" class="btn btn-default">
+          <span class="glyphicon glyphicon-play" aria-hidden="true"></span> Play both
         </button>
       </div>
 
@@ -262,6 +309,164 @@ $('[data-daud="instrument"]').on('click', function(e) {
       $('[data-daud="instrument"]').on('click', function(e) {
         e.preventDefault();
         instrument.play();
+      });
+
+      // Continuous
+      var heatNotes = [
+        'C2', 'D2', 'E2', 'F2', 'G2', 'A2', 'B2',
+        'C3', 'D3', 'E3', 'F3', 'G3', 'A3', 'B3',
+        'C4', 'D4', 'E4', 'F4', 'G4', 'A4', 'B4',
+        'C5', 'D5', 'E5', 'F5', 'G5', 'A5', 'B5',
+        'C6', 'D6', 'E6', 'F6', 'G6', 'A6', 'B6'
+      ];
+      var outsideHeat = new Daud({
+        note: function(d, i, t, p) {
+          // Adjust note/pitch heat index
+          // Make 75 deg middle C
+          return heatNotes[Math.round(d.hi) - 80 + 14];
+        },
+        time: function(d, i, t, p) {
+          // Tell daud that the time is determined by the hours
+          return d.hour * 1250;
+        },
+        instrument: function(d, i, t, p) {
+          // Hold the note a bit longer
+          var instrument = JSON.parse(JSON.stringify(this.instruments.piano));
+          instrument.env.release = 1.5;
+          return instrument;
+        },
+        data: [
+          {"hour":0,"hi":80.06},
+          {"hour":0.5,"hi":79.46},
+          {"hour":1,"hi":78.87},
+          {"hour":1.5,"hi":78.81},
+          {"hour":2,"hi":78.5},
+          {"hour":2.5,"hi":78.39},
+          {"hour":3,"hi":78.26},
+          {"hour":3.5,"hi":77.92},
+          {"hour":4,"hi":77.92},
+          {"hour":4.5,"hi":77.64},
+          {"hour":5,"hi":77.46},
+          {"hour":5.5,"hi":77.42},
+          {"hour":6,"hi":77.55},
+          {"hour":6.5,"hi":77.68},
+          {"hour":7,"hi":77.96},
+          {"hour":7.5,"hi":78.41},
+          {"hour":8,"hi":79.01},
+          {"hour":8.5,"hi":79.84},
+          {"hour":9,"hi":81},
+          {"hour":9.5,"hi":82.25},
+          {"hour":10,"hi":83.72},
+          {"hour":10.5,"hi":84.94},
+          {"hour":11,"hi":86.07},
+          {"hour":11.5,"hi":87.4},
+          {"hour":12,"hi":88.34},
+          {"hour":12.5,"hi":89.48},
+          {"hour":13,"hi":90.26},
+          {"hour":13.5,"hi":91.4},
+          {"hour":14,"hi":92.83},
+          {"hour":14.5,"hi":92.48},
+          {"hour":15,"hi":93.36},
+          {"hour":15.5,"hi":91.86},
+          {"hour":16,"hi":90.81},
+          {"hour":16.5,"hi":89.43},
+          {"hour":17,"hi":88.86},
+          {"hour":17.5,"hi":88.18},
+          {"hour":18,"hi":87.35},
+          {"hour":18.5,"hi":85.92},
+          {"hour":19,"hi":85.43},
+          {"hour":19.5,"hi":84.34},
+          {"hour":20,"hi":83.59},
+          {"hour":20.5,"hi":83.08},
+          {"hour":21,"hi":82.68},
+          {"hour":21.5,"hi":82.13},
+          {"hour":22,"hi":81.61},
+          {"hour":22.5,"hi":81.29},
+          {"hour":23,"hi":81.09},
+          {"hour":23.5,"hi":80.7}
+        ]
+      });
+      $('[data-daud="outside-heat"]').on('click', function(e) {
+        e.preventDefault();
+        outsideHeat.play();
+      });
+
+      var insideHeat = new Daud({
+        note: function(d, i, t, p) {
+          // Adjust note/pitch heat index
+          // Make 75 deg middle C
+          return heatNotes[Math.round(d.hi) - 80 + 14];
+        },
+        time: function(d, i, t, p) {
+          // Tell daud that the time is determined by the hours
+          return d.hour * 1250;
+        },
+        instrument: function(d, i, t, p) {
+          // Hold the note a bit longer
+          var instrument = JSON.parse(JSON.stringify(this.instruments.piano));
+          instrument.env.release = 1.5;
+          return instrument;
+        },
+        data: [
+          {"hour":0,"hi":87.8},
+          {"hour":0.5,"hi":87.73},
+          {"hour":1,"hi":87.59},
+          {"hour":1.5,"hi":87.45},
+          {"hour":2,"hi":87.31},
+          {"hour":2.5,"hi":87.15},
+          {"hour":3,"hi":87.11},
+          {"hour":3.5,"hi":86.79},
+          {"hour":4,"hi":86.6},
+          {"hour":4.5,"hi":86.41},
+          {"hour":5,"hi":86.25},
+          {"hour":5.5,"hi":86.13},
+          {"hour":6,"hi":85.91},
+          {"hour":6.5,"hi":85.76},
+          {"hour":7,"hi":85.62},
+          {"hour":7.5,"hi":85.52},
+          {"hour":8,"hi":85.38},
+          {"hour":8.5,"hi":85.36},
+          {"hour":9,"hi":85.53},
+          {"hour":9.5,"hi":85.43},
+          {"hour":10,"hi":85.46},
+          {"hour":10.5,"hi":85.47},
+          {"hour":11,"hi":85.41},
+          {"hour":11.5,"hi":85.38},
+          {"hour":12,"hi":85.54},
+          {"hour":12.5,"hi":86.59},
+          {"hour":13,"hi":86.59},
+          {"hour":13.5,"hi":86.32},
+          {"hour":14,"hi":86.35},
+          {"hour":14.5,"hi":86.3},
+          {"hour":15,"hi":86.41},
+          {"hour":15.5,"hi":86.53},
+          {"hour":16,"hi":86.75},
+          {"hour":16.5,"hi":85.24},
+          {"hour":17,"hi":86.15},
+          {"hour":17.5,"hi":87.22},
+          {"hour":18,"hi":88.37},
+          {"hour":18.5,"hi":88.22},
+          {"hour":19,"hi":88.13},
+          {"hour":19.5,"hi":87.58},
+          {"hour":20,"hi":86.01},
+          {"hour":20.5,"hi":84.24},
+          {"hour":21,"hi":86.7},
+          {"hour":21.5,"hi":87.51},
+          {"hour":22,"hi":89.23},
+          {"hour":22.5,"hi":88.31},
+          {"hour":23,"hi":88.03},
+          {"hour":23.5,"hi":87.96}
+        ]
+      });
+      $('[data-daud="inside-heat"]').on('click', function(e) {
+        e.preventDefault();
+        insideHeat.play();
+      });
+
+      $('[data-daud="heat"]').on('click', function(e) {
+        e.preventDefault();
+        outsideHeat.play();
+        insideHeat.play();
       });
     </script>
   </body>

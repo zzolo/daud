@@ -10,9 +10,9 @@ module.exports = function(grunt) {
             },
             build: {
             // the files to concatenate
-                src: ['src/Recorderjs/recorder.js', 'src/wad.js'],
+                src: ['src/Recorderjs/recorder.js', 'src/tuna.js', 'src/wad.js'],
             // the location of the resulting JS file
-                dest: 'build/<%= pkg.name %>.js'
+                dest: 'build/wad.js'
             }
         },
         uglify: {
@@ -21,14 +21,14 @@ module.exports = function(grunt) {
             },
             build: {
                 src: '<%= umd.all.options.dest %>',
-                dest: 'build/<%= pkg.name %>.min.js'
+                dest: 'build/wad.min.js'
             }
         },
         umd: {
             all: {
                 options: {
                     src: '<%= concat.build.dest %>',
-                    dest: 'build/<%= pkg.name %>.js',
+                    dest: 'build/wad.js',
                     objectToExport: 'Wad'
                 }
             }

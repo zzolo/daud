@@ -1,7 +1,7 @@
 {
   "name": "Wad",
-  "main": "wad.js",
-  "version": "2.2.3",
+  "main": "build/wad.js",
+  "version": "2.5.0",
   "homepage": "https://github.com/rserota/wad",
   "authors": [
     "raphael.serota@gmail.com"
@@ -17,14 +17,13 @@
     "audio"
   ],
   "license": "MIT",
-  "_release": "2.2.3",
+  "_release": "2.5.0",
   "_resolution": {
     "type": "version",
-    "tag": "2.2.3",
-    "commit": "3b990ed9c2a8a478fd8b6f414dc87f26c9398177"
+    "tag": "2.5.0",
+    "commit": "f5cc7a5f5d775398cac35891d7eb558a3c5bb8a2"
   },
-  "_source": "git://github.com/rserota/wad.git",
-  "_target": "~2.2.3",
-  "_originalSource": "wad",
-  "_direct": true
+  "_source": "https://github.com/rserota/wad.git",
+  "_target": "~2.5.0",
+  "_originalSource": "wad"
 }

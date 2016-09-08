@@ -36,15 +36,20 @@
     panning: 0,
 
     // The value for a datapoint is either the 'value'
-    // property or the datapoint itself
+    // property or the datapoint itself.  This is mostly just helpful
+    // for the default time function.
     value: function(d) {
       return _.isObject(d) ? d.value : d;
     },
 
     // Time for a data point is either the 'time' property
-    // or assumed to be the value as seconds
+    // the 'value' or 'seconds' property as seconds,
+    // or assumed to be the value as seconds if not an object.
     time: function(d) {
-      return _.isObject(d) && d.time ? d.time : d * 1000;
+      return _.isObject(d) && d.time ? d.time :
+        _.isObject(d) && d.value ? d.value * 1000 :
+        _.isObject(d) && d.seconds ? d.seconds * 1000 :
+        d * 1000;
     }
   };
 
@@ -79,6 +84,7 @@
   // Constructor.
   var Daud = function(options) {
     this.options = _.extend({}, defaultOptions, options);
+    this.instruments = instruments;
     this.make();
   };
 
